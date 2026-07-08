@@ -1,6 +1,6 @@
 FROM php:8.3-cli
 
-# Install system packages
+# Install system packages and PHP extensions
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -28,11 +28,18 @@ WORKDIR /app
 # Copy project
 COPY . .
 
-# Install dependencies
+# Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Create .env
-RUN cp .env.example .env || true
+# Ensure storage directories exist and are writable
+RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
+# Clear Laravel caches
+RUN php artisan config:clear || true
+RUN php artisan route:clear || true
+RUN php artisan view:clear || true
+RUN php artisan cache:clear || true
 
 EXPOSE 10000
 
