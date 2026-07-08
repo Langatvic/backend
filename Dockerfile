@@ -13,12 +13,15 @@ WORKDIR /app
 
 COPY . .
 
+# Install Laravel dependencies
+RUN composer install --no-dev --optimize-autoloader
 
-
+# Create .env if it doesn't exist
 RUN cp .env.example .env || true
 
+# Generate application key
 RUN php artisan key:generate --force || true
 
 EXPOSE 10000
 
-CMD php artisan serve --host=0.0.0.0 --port=$PORT
+CMD php artisan serve --host=0.0.0.0 --port=${PORT:-10000}
