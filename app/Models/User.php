@@ -87,18 +87,18 @@ class User extends Authenticatable
         return ($roleMap[$this->role_id] ?? null) === $roleSlug;
     }
 
-    public function getRoleAttribute()
+     public function getRoleNameAttribute()
     {
         if ($this->relationLoaded('role') && $this->role) {
             return $this->role->slug;
         }
-        
+
         $roleMap = [
             1 => 'customer',
             2 => 'manager',
             3 => 'admin',
         ];
-        
+
         return $roleMap[$this->role_id] ?? 'customer';
     }
 }
