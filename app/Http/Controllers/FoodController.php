@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Food;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class FoodController extends Controller
 {
@@ -36,35 +37,40 @@ class FoodController extends Controller
 
     // ============ IMAGE UPLOAD METHOD ============
     
-    public function uploadImage(Request $request)
-    {
-        $validator = validator($request->all(), [
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        try {
-            $image = $request->file('image');
-            $filename = time() . '_' . $image->getClientOriginalName();
-            $path = $image->storeAs('foods', $filename, 'public');
-            
-            // Generate full URL
-            $url = asset('storage/' . $path);
-            
-            return response()->json([
-                'image_url' => $url,
-                'path' => $path,
-                'message' => 'Image uploaded successfully'
+            public function uploadImage(Request $request)
+        {
+            $validator = validator($request->all(), [
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:4096',
             ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to upload image: ' . $e->getMessage()
-            ], 500);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            try {
+
+                $uploaded = Cloudinary::upload(
+                    $request->file('image')->getRealPath(),
+                    [
+                        'folder' => 'foods'
+                    ]
+                );
+
+                return response()->json([
+                    'image_url' => $uploaded->getSecurePath(),
+                    'public_id' => $uploaded->getPublicId(),
+                    'message' => 'Image uploaded successfully'
+                ]);
+
+            } catch (\Exception $e) {
+
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], 500);
+            }
         }
-    }
 
     // Admin only
     public function store(Request $request)
@@ -98,8 +104,9 @@ class FoodController extends Controller
     public function destroy($id)
     {
         $food = Food::findOrFail($id);
-        
-        if ($food->image_url && strpos($food->image_url, 'storage/') !== false) {
+    
+         
+        {
             $path = str_replace(asset('storage/'), '', $food->image_url);
             if (Storage::disk('public')->exists($path)) {
                 Storage::disk('public')->delete($path);
