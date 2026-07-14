@@ -37,40 +37,43 @@ class FoodController extends Controller
 
     // ============ IMAGE UPLOAD METHOD ============
     
-            public function uploadImage(Request $request)
-        {
-            $validator = validator($request->all(), [
-                'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:4096',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            try {
-
-                $uploaded = Cloudinary::upload(
-                    $request->file('image')->getRealPath(),
-                    [
-                        'folder' => 'foods'
-                    ]
-                );
-
-                return response()->json([
-                    'image_url' => $uploaded->getSecurePath(),
-                    'public_id' => $uploaded->getPublicId(),
-                    'message' => 'Image uploaded successfully'
+        public function uploadImage(Request $request)
+            {
+                $validator = validator($request->all(), [
+                    'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                 ]);
 
-            } catch (\Exception $e) {
+                if ($validator->fails()) {
+                    return response()->json([
+                        'errors' => $validator->errors()
+                    ], 422);
+                }
 
-                return response()->json([
-                    'message' => $e->getMessage()
-                ], 500);
+                try {
+
+                    $image = $request->file('image');
+
+                    $upload = app(\Cloudinary\Cloudinary::class)
+                        ->uploadApi()
+                        ->upload(
+                            $image->getRealPath(),
+                            [
+                                'folder' => 'foods'
+                            ]
+                        );
+
+                    return response()->json([
+                        'image_url' => $upload['secure_url'],
+                        'message' => 'Image uploaded successfully'
+                    ]);
+
+                } catch (\Exception $e) {
+
+                    return response()->json([
+                        'message' => 'Failed to upload image: '.$e->getMessage()
+                    ], 500);
+                }
             }
-        }
 
     // Admin only
     public function store(Request $request)

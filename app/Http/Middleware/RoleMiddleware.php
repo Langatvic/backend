@@ -10,11 +10,23 @@ class RoleMiddleware
     public function handle(Request $request, Closure $next, ...$roles)
     {
         if (!auth()->check()) {
-            return response()->json(['message' => 'Unauthenticated'], 401);
+            return response()->json([
+                'message' => 'Unauthenticated'
+            ], 401);
         }
 
-        if (!in_array(auth()->user()->role, $roles)) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        $user = auth()->user();
+
+        if (!$user->role) {
+            return response()->json([
+                'message' => 'No role assigned'
+            ], 403);
+        }
+
+        if (!in_array($user->role->slug, $roles)) {
+            return response()->json([
+                'message' => 'Unauthorized'
+            ], 403);
         }
 
         return $next($request);
